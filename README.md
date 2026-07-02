@@ -37,10 +37,12 @@ Arguments:
 
 | Flag | Description |
 | --- | --- |
-| `--questions` | Markdown file containing the funder's application questions |
+| `--questions` | Funder's application questions as a .md, .pdf, or .docx file |
 | `--org` | Markdown file with the nonprofit's facts (mission, programs, wins) |
 | `--examples` | Directory of past proposals used as style references |
 | `--out` | Path for the generated .docx draft |
+
+Drop past proposals into `data/examples` as .md, .pdf, or .docx. GrantSmith extracts the text from each file. Files with any other extension are skipped with a warning rather than stopping the run. The `--questions` file may also be a .md, .pdf, or .docx file.
 
 ## Configuring the LLM provider
 
@@ -69,7 +71,7 @@ Copy the current Claude Sonnet model id from [console.anthropic.com](https://con
 ## Customizing for another nonprofit
 
 - Replace `data/org_facts.md` with the new organization's mission, programs, people served, and past wins.
-- Replace the files in `data/examples/` with two or three of the organization's real past proposals in markdown.
+- Replace the files in `data/examples/` with two or three of the organization's real past proposals as .md, .pdf, or .docx.
 - Point `--questions` at the new funder's application questions.
 
 ## Project structure

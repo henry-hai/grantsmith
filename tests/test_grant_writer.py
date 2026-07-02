@@ -3,10 +3,14 @@
 The LLM call is mocked, so these tests run without any API key or network.
 """
 
+from pathlib import Path
+
 import pytest
 
 from src import grant_writer
 from src.docx_export import write_docx
+
+FIXTURES = Path(__file__).parent / "fixtures"
 
 
 def test_split_questions_basic():
@@ -91,6 +95,21 @@ def test_draft_section_uses_mocked_llm(monkeypatch):
     assert "What is your mission?" in captured["user"]
     assert "We serve youth." in captured["user"]
     assert "Example proposal text." in captured["user"]
+
+
+def test_extract_pdf_fixture():
+    text = grant_writer._extract_pdf(FIXTURES / "sample.pdf")
+    assert "Extracted pdf text." in text
+
+
+def test_extract_docx_fixture():
+    text = grant_writer._extract_docx(FIXTURES / "sample.docx")
+    assert "Extracted docx text." in text
+
+
+def test_load_questions_reads_docx():
+    text = grant_writer.load_questions(str(FIXTURES / "sample.docx"))
+    assert "Extracted docx text." in text
 
 
 def test_write_docx_creates_file(tmp_path):

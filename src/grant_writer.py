@@ -11,8 +11,8 @@ from pathlib import Path
 from . import prompts
 from .llm import generate
 
-EXAMPLES_EXTENSIONS = (".md",)
-QUESTIONS_EXTENSIONS = (".md",)
+EXAMPLES_EXTENSIONS = (".md", ".txt", ".pdf", ".docx")
+QUESTIONS_EXTENSIONS = (".md", ".txt", ".pdf", ".docx")
 
 
 class InputError(Exception):
@@ -22,13 +22,42 @@ class InputError(Exception):
 def _read_text_file(path: Path) -> str:
     """Extract text from a single supported file.
 
-    Only markdown and plain text are supported here. Support for other file
-    types is added by extending this dispatcher.
+    Markdown and plain text are read directly. PDF files are read with pypdf
+    and Word files with python-docx. Support for other file types is added by
+    extending this dispatcher.
     """
     suffix = path.suffix.lower()
     if suffix in (".md", ".txt"):
         return path.read_text(encoding="utf-8")
+    if suffix == ".pdf":
+        return _extract_pdf(path)
+    if suffix == ".docx":
+        return _extract_docx(path)
     raise InputError(f"Unsupported file type '{suffix}' for {path}.")
+
+
+def _extract_pdf(path: Path) -> str:
+    """Extract text from a PDF file using pypdf."""
+    from pypdf import PdfReader
+
+    try:
+        reader = PdfReader(str(path))
+        pages = [page.extract_text() or "" for page in reader.pages]
+    except Exception as exc:
+        raise InputError(f"Could not read PDF {path}: {exc}") from exc
+    return "\n".join(pages)
+
+
+def _extract_docx(path: Path) -> str:
+    """Extract text from a Word file using python-docx."""
+    from docx import Document
+
+    try:
+        document = Document(str(path))
+        paragraphs = [paragraph.text for paragraph in document.paragraphs]
+    except Exception as exc:
+        raise InputError(f"Could not read Word file {path}: {exc}") from exc
+    return "\n".join(paragraphs)
 
 
 def load_org_facts(path: str) -> str:
