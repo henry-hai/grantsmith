@@ -161,7 +161,18 @@ def _strip_leading_number(line: str) -> str:
     return line[index:].strip()
 
 
-def draft_section(question: str, org_facts: str, examples: str) -> str:
-    """Draft one proposal section answering a single question."""
-    user_prompt = prompts.build_user_prompt(org_facts, examples, question)
+def draft_section(
+    question: str,
+    org_facts: str,
+    examples: str,
+    sponsor_context: str = "",
+) -> str:
+    """Draft one proposal section answering a single question.
+
+    When sponsor_context is provided, the answer is tailored toward that
+    sponsor's priorities. When it is empty, drafting is untailored.
+    """
+    user_prompt = prompts.build_user_prompt(
+        org_facts, examples, question, sponsor_context
+    )
     return generate(prompts.SYSTEM_PROMPT, user_prompt)
