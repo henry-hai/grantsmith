@@ -44,6 +44,35 @@ Arguments:
 
 Drop past proposals into `data/examples` as .md, .pdf, or .docx. GrantSmith extracts the text from each file. Files with any other extension are skipped with a warning rather than stopping the run. The `--questions` file may also be a .md, .pdf, or .docx file.
 
+## Tailoring to a specific sponsor
+
+GrantSmith can ground its answers in the sponsor a grant is aimed at, so the draft speaks to that sponsor's priorities instead of reading as generic. Sponsor context comes from two optional sources that can be used alone or together.
+
+| Flag | Description |
+| --- | --- |
+| `--sponsor-url` | A sponsor web page to fetch and read for grounding context. Repeat the flag to include more than one page. |
+| `--sponsor-file` | A file of manual sponsor context you write: relationship history, program officer, the specific ask, alignment notes. Use `data/sponsors/example_sponsor.md` as a starting template. |
+
+Three ways to use it:
+
+- **Scrape only.** Pass one or more `--sponsor-url` pages. GrantSmith fetches each page, reduces it to readable text, and feeds it into the drafting prompt.
+- **Manual only.** Pass a `--sponsor-file` you have written by hand.
+- **Hybrid.** Pass both. The sponsor's own words from their site are combined with the human context the site does not contain.
+
+Example, tailoring an application toward Adobe:
+
+```bash
+python -m src.main \
+  --questions inputs/example_grant_questions.md \
+  --org data/org_facts.md \
+  --examples data/examples \
+  --sponsor-url https://www.adobe.com/corporate-responsibility.html \
+  --sponsor-file data/sponsors/adobe.md \
+  --out outputs/adobe_draft.docx
+```
+
+If a sponsor page cannot be fetched, GrantSmith prints a warning and continues with whatever other context is available, rather than stopping the run. GrantSmith will not invent facts about the sponsor. It uses only the sponsor context you provide.
+
 ## Configuring the LLM provider
 
 GrantSmith is provider-agnostic. The provider and model are read from environment variables, and switching providers requires zero code changes.
