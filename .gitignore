@@ -2,3 +2,8 @@
 outputs/
 __pycache__/
 .venv/
+
+# Real sponsor context files may hold private notes (program officers,
+# relationships, ask amounts). Keep them local. Only the template is tracked.
+data/sponsors/*
+!data/sponsors/example_sponsor.md
