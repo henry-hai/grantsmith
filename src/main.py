@@ -12,6 +12,7 @@ import argparse
 import sys
 
 from . import grant_writer
+from . import sponsor
 from .docx_export import write_docx
 from .llm import LLMError
 
@@ -42,6 +43,24 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Path for the generated .docx draft.",
     )
     parser.add_argument(
+        "--sponsor-url",
+        action="append",
+        default=None,
+        metavar="URL",
+        help=(
+            "Sponsor web page to fetch for grounding context. Repeat the flag "
+            "to include more than one page."
+        ),
+    )
+    parser.add_argument(
+        "--sponsor-file",
+        default=None,
+        help=(
+            "File of manual sponsor context (relationship, ask, alignment "
+            "notes). Combined with any --sponsor-url pages."
+        ),
+    )
+    parser.add_argument(
         "--title",
         default="Grant Proposal Draft",
         help="Title placed at the top of the .docx file.",
@@ -54,9 +73,17 @@ def run(args: argparse.Namespace) -> int:
         org_facts = grant_writer.load_org_facts(args.org)
         examples = grant_writer.load_examples(args.examples)
         questions_text = grant_writer.load_questions(args.questions)
+        sponsor_context = sponsor.load_sponsor_context(
+            args.sponsor_url, args.sponsor_file
+        )
     except grant_writer.InputError as exc:
         print(f"Input error: {exc}", file=sys.stderr)
         return 1
+
+    if sponsor_context:
+        print("Loaded sponsor context. Answers will be tailored to the sponsor.")
+    else:
+        print("No sponsor context provided. Drafting without sponsor tailoring.")
 
     questions = grant_writer.split_questions(questions_text)
     if not questions:
@@ -74,7 +101,9 @@ def run(args: argparse.Namespace) -> int:
         preview = question if len(question) <= 70 else question[:67] + "..."
         print(f"[{number}/{len(questions)}] Drafting: {preview}")
         try:
-            answer = grant_writer.draft_section(question, org_facts, examples)
+            answer = grant_writer.draft_section(
+                question, org_facts, examples, sponsor_context
+            )
         except LLMError as exc:
             print(f"LLM error while drafting section {number}: {exc}", file=sys.stderr)
             return 2
