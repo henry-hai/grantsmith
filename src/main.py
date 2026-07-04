@@ -12,6 +12,7 @@ import argparse
 import sys
 
 from . import grant_writer
+from . import retrieval
 from . import sponsor
 from .docx_export import write_docx
 from .llm import LLMError
@@ -94,15 +95,41 @@ def run(args: argparse.Namespace) -> int:
         )
         return 1
 
+    top_k = retrieval.get_top_k()
+    index = retrieval.try_build_index(examples, top_k)
+    if index is not None:
+        print(
+            f"Built retrieval index of {len(index.chunks)} example chunk(s). "
+            f"Injecting the top {top_k} per question."
+        )
+    else:
+        print("Retrieval unavailable. Using the full example text per question.")
+
     print(f"Found {len(questions)} question(s). Drafting sections.\n")
 
     sections = []
     for number, question in enumerate(questions, start=1):
         preview = question if len(question) <= 70 else question[:67] + "..."
         print(f"[{number}/{len(questions)}] Drafting: {preview}")
+
+        examples_for_question = examples
+        if index is not None:
+            try:
+                examples_for_question = "\n\n".join(
+                    index.retrieve(question, top_k)
+                )
+            except retrieval.EmbeddingError as exc:
+                print(
+                    f"  Could not embed the question ({exc}). Using the full "
+                    "example text for the rest of this run.",
+                    file=sys.stderr,
+                )
+                index = None
+                examples_for_question = examples
+
         try:
             answer = grant_writer.draft_section(
-                question, org_facts, examples, sponsor_context
+                question, org_facts, examples_for_question, sponsor_context
             )
         except LLMError as exc:
             print(f"LLM error while drafting section {number}: {exc}", file=sys.stderr)
