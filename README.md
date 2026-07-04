@@ -6,8 +6,8 @@ Version 1 was built for ArtHouse Studio, but nothing about the organization is h
 
 ## How it works
 
-1. Reads a markdown file of funder application questions and splits it into individual questions.
-2. For each question, calls an LLM once with a prompt that includes the org facts, the example past proposals as style references, and that single question.
+1. Reads a funder application questions file and splits it into individual questions.
+2. For each question, retrieves the most relevant passages from the example proposals (see Retrieval below) and calls an LLM once with a prompt that includes the org facts, those retrieved passages as style references, and that single question.
 3. Assembles all drafted sections into one .docx file, with each question as a heading and the drafted answer beneath it.
 
 ## Setup
@@ -43,6 +43,25 @@ Arguments:
 | `--out` | Path for the generated .docx draft |
 
 Drop past proposals into `data/examples` as .md, .pdf, or .docx. GrantSmith extracts the text from each file. Files with any other extension are skipped with a warning rather than stopping the run. The `--questions` file may also be a .md, .pdf, or .docx file.
+
+## Retrieval over past proposals
+
+GrantSmith does not stuff every example proposal into every prompt. Instead it uses retrieval (RAG) so each question is answered against only the most relevant example passages.
+
+On each run GrantSmith reads the example proposals, splits their text into overlapping chunks, and embeds each chunk with an OpenAI embedding model. For every question it embeds the question, ranks the chunks by cosine similarity, and injects only the top matches into the prompt. Vectors are held in memory with numpy for the duration of the run. There is no external vector database and nothing is persisted to disk.
+
+Embeddings use OpenAI, so `OPENAI_API_KEY` is required whenever retrieval is active, even if drafting itself uses Anthropic.
+
+Retrieval is controlled by these environment variables, all optional:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `EMBEDDING_MODEL` | `text-embedding-3-small` | OpenAI embedding model used for chunks and questions |
+| `RAG_TOP_K` | `5` | Number of example chunks injected per question |
+| `CHUNK_SIZE` | `1000` | Target chunk size in characters |
+| `CHUNK_OVERLAP` | `200` | Overlap between consecutive chunks in characters |
+
+Graceful fallback: if there are fewer example chunks than `RAG_TOP_K`, or embeddings cannot be produced (for example a missing key or an API error), GrantSmith prints a clear warning and falls back to using the full example text for that run rather than stopping.
 
 ## Tailoring to a specific sponsor
 
@@ -132,5 +151,6 @@ pytest
 
 Planned upgrades for v2:
 
-- Real RAG retrieval with embeddings over past proposals, so the most relevant passages are selected per question instead of including all examples in every prompt.
 - Direct Google Docs API export, so drafts land in a shared Drive folder instead of a local .docx file.
+
+Already implemented: RAG retrieval with embeddings over past proposals, so the most relevant passages are selected per question instead of including all examples in every prompt. See "Retrieval over past proposals" above.

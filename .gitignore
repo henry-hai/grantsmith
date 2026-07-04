@@ -7,3 +7,6 @@ __pycache__/
 # relationships, ask amounts). Keep them local. Only the template is tracked.
 data/sponsors/*
 !data/sponsors/example_sponsor.md
+
+# Local resume-grounding notes. Never commit or push.
+GrantSmith_project_context.txt
